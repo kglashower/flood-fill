@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>Flood Fill</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app" id="appRoot">
+      <header class="hud" aria-label="Game HUD">
+        <div class="hud__item"><span class="hud__label">Moves</span> <span id="movesValue">0</span></div>
+        <div class="hud__item"><span class="hud__label">Best</span> <span id="bestValue">-</span></div>
+        <div class="hud__controls">
+          <label for="difficultySelect" class="sr-only">Difficulty</label>
+          <select id="difficultySelect" aria-label="Select difficulty"></select>
+          <button id="newGameBtn" class="btn btn--small" type="button">New Game</button>
+        </div>
+      </header>
+
+      <main class="board-wrap" aria-label="Game board area">
+        <section id="board" class="board" aria-label="Flood Fill board"></section>
+      </main>
+
+      <nav id="colorBar" class="color-bar" aria-label="Color controls"></nav>
+    </div>
+
+    <div id="winModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+      <div class="modal__content">
+        <h2 id="winTitle">You Win!</h2>
+        <p id="winMessage">Completed in 0 moves.</p>
+        <button id="restartBtn" class="btn" type="button">Play Again</button>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
