@@ -1,15 +1,46 @@
 (() => {
-  const PALETTE = ["#e74c3c", "#f1c40f", "#2ecc71", "#3498db", "#9b59b6", "#e67e22", "#ff2d95", "#ffffff"];
+  const COLOR_SCHEMES = {
+    rainbow: {
+      label: "Rainbow",
+      colors: ["#ef4444", "#f59e0b", "#facc15", "#22c55e", "#3b82f6", "#8b5cf6", "#ff2d95", "#ffffff"],
+    },
+    ice: {
+      label: "Ice",
+      colors: ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0ea5e9", "#0284c7", "#0369a1", "#082f49"],
+    },
+    fire: {
+      label: "Fire",
+      colors: ["#fff59d", "#ffe082", "#ffca28", "#ffb300", "#fb8c00", "#ef6c00", "#e64a19", "#c62828"],
+    },
+    forest: {
+      label: "Forest",
+      colors: ["#d9f99d", "#a3c853", "#4cbb17", "#2f8f2f", "#2e7d32", "#50c878", "#228b22", "#145a32"],
+    },
+    monochrome: {
+      label: "Monochrome",
+      colors: ["#f8fafc", "#e2e8f0", "#cbd5e1", "#94a3b8", "#64748b", "#475569", "#334155", "#1e293b"],
+    },
+    neon: {
+      label: "Neon",
+      colors: ["#39ff14", "#00e5ff", "#ff00f5", "#ffe600", "#ff5f1f", "#8a2be2", "#00ffa3", "#ffffff"],
+    },
+    pastel: {
+      label: "Pastel",
+      colors: ["#ffd6e0", "#ffe5b4", "#fff6a3", "#d9f7be", "#b5ead7", "#c7ceea", "#e2c2ff", "#f3f4f6"],
+    },
+  };
+
   const DIFFICULTIES = [
-    { label: "Easy 10x10 (5 colors)", size: 10, colorCount: 5 },
-    { label: "Classic 12x12 (6 colors)", size: 12, colorCount: 6 },
-    { label: "Hard 14x14 (7 colors)", size: 14, colorCount: 7 },
-    { label: "Extreme 16x16 (8 colors)", size: 16, colorCount: 8 },
+    { label: "Easy 10x10 (5 colors)", shortLabel: "Easy", size: 10, colorCount: 5 },
+    { label: "Classic 12x12 (6 colors)", shortLabel: "Classic", size: 12, colorCount: 6 },
+    { label: "Hard 14x14 (7 colors)", shortLabel: "Hard", size: 14, colorCount: 7 },
+    { label: "Extreme 16x16 (8 colors)", shortLabel: "Extreme", size: 16, colorCount: 8 },
   ];
 
   const gameState = {
     size: 12,
     colorCount: 6,
+    schemeKey: "rainbow",
     grid: [],
     moves: 0,
     floodedColor: 0,
@@ -22,8 +53,13 @@
     colorBar: document.getElementById("colorBar"),
     movesValue: document.getElementById("movesValue"),
     bestValue: document.getElementById("bestValue"),
+    modeValue: document.getElementById("modeValue"),
     newGameBtn: document.getElementById("newGameBtn"),
-    difficultySelect: document.getElementById("difficultySelect"),
+    newGameModal: document.getElementById("newGameModal"),
+    setupDifficulty: document.getElementById("setupDifficulty"),
+    setupScheme: document.getElementById("setupScheme"),
+    startGameBtn: document.getElementById("startGameBtn"),
+    schemePreview: document.getElementById("schemePreview"),
     winModal: document.getElementById("winModal"),
     winMessage: document.getElementById("winMessage"),
     restartBtn: document.getElementById("restartBtn"),
@@ -39,12 +75,38 @@
     );
   }
 
-  function getBestScoreKey(size, colorCount) {
-    return `flood-fill-best-${size}x${size}-k${colorCount}`;
+  function getSchemeColors(schemeKey) {
+    const scheme = COLOR_SCHEMES[schemeKey] || COLOR_SCHEMES.rainbow;
+    return scheme.colors;
   }
 
-  function loadBestScore(size, colorCount) {
-    const raw = localStorage.getItem(getBestScoreKey(size, colorCount));
+  function pickEvenlySpacedColors(colors, count) {
+    if (count >= colors.length) {
+      return colors.slice();
+    }
+    if (count <= 1) {
+      return [colors[0]];
+    }
+
+    const selected = [];
+    const maxIndex = colors.length - 1;
+    for (let i = 0; i < count; i += 1) {
+      const index = Math.round((i * maxIndex) / (count - 1));
+      selected.push(colors[index]);
+    }
+    return selected;
+  }
+
+  function getActivePalette() {
+    return pickEvenlySpacedColors(getSchemeColors(gameState.schemeKey), gameState.colorCount);
+  }
+
+  function getBestScoreKey(size, colorCount, schemeKey) {
+    return `flood-fill-best-${size}x${size}-k${colorCount}-scheme-${schemeKey}`;
+  }
+
+  function loadBestScore(size, colorCount, schemeKey) {
+    const raw = localStorage.getItem(getBestScoreKey(size, colorCount, schemeKey));
     if (!raw) {
       return null;
     }
@@ -58,7 +120,10 @@
     }
     if (gameState.bestScore === null || gameState.moves < gameState.bestScore) {
       gameState.bestScore = gameState.moves;
-      localStorage.setItem(getBestScoreKey(gameState.size, gameState.colorCount), String(gameState.moves));
+      localStorage.setItem(
+        getBestScoreKey(gameState.size, gameState.colorCount, gameState.schemeKey),
+        String(gameState.moves)
+      );
     }
   }
 
@@ -93,34 +158,30 @@
 
       if (r > 0) {
         const nr = r - 1;
-        const nc = c;
-        if (gameState.grid[nr][nc] === originalColor) {
-          gameState.grid[nr][nc] = nextColor;
-          queue.push([nr, nc]);
+        if (gameState.grid[nr][c] === originalColor) {
+          gameState.grid[nr][c] = nextColor;
+          queue.push([nr, c]);
         }
       }
       if (r < size - 1) {
         const nr = r + 1;
-        const nc = c;
-        if (gameState.grid[nr][nc] === originalColor) {
-          gameState.grid[nr][nc] = nextColor;
-          queue.push([nr, nc]);
+        if (gameState.grid[nr][c] === originalColor) {
+          gameState.grid[nr][c] = nextColor;
+          queue.push([nr, c]);
         }
       }
       if (c > 0) {
-        const nr = r;
         const nc = c - 1;
-        if (gameState.grid[nr][nc] === originalColor) {
-          gameState.grid[nr][nc] = nextColor;
-          queue.push([nr, nc]);
+        if (gameState.grid[r][nc] === originalColor) {
+          gameState.grid[r][nc] = nextColor;
+          queue.push([r, nc]);
         }
       }
       if (c < size - 1) {
-        const nr = r;
         const nc = c + 1;
-        if (gameState.grid[nr][nc] === originalColor) {
-          gameState.grid[nr][nc] = nextColor;
-          queue.push([nr, nc]);
+        if (gameState.grid[r][nc] === originalColor) {
+          gameState.grid[r][nc] = nextColor;
+          queue.push([r, nc]);
         }
       }
     }
@@ -129,7 +190,21 @@
     return true;
   }
 
+  function isLightHex(hex) {
+    const value = hex.replace("#", "");
+    const normalized = value.length === 3
+      ? value.split("").map((ch) => ch + ch).join("")
+      : value;
+
+    const r = Number.parseInt(normalized.slice(0, 2), 16);
+    const g = Number.parseInt(normalized.slice(2, 4), 16);
+    const b = Number.parseInt(normalized.slice(4, 6), 16);
+    const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return luminance > 190;
+  }
+
   function renderBoard() {
+    const palette = getActivePalette();
     el.board.style.gridTemplateColumns = `repeat(${gameState.size}, 1fr)`;
     el.board.innerHTML = "";
 
@@ -138,35 +213,66 @@
       for (let c = 0; c < gameState.size; c += 1) {
         const tile = document.createElement("div");
         tile.className = "tile";
-        tile.style.backgroundColor = PALETTE[gameState.grid[r][c]];
+        tile.style.backgroundColor = palette[gameState.grid[r][c]];
         frag.appendChild(tile);
       }
     }
     el.board.appendChild(frag);
   }
 
+  function getCurrentDifficulty() {
+    return DIFFICULTIES.find((d) => d.size === gameState.size && d.colorCount === gameState.colorCount) || DIFFICULTIES[1];
+  }
+
   function renderHUD() {
+    const difficulty = getCurrentDifficulty();
+    const scheme = COLOR_SCHEMES[gameState.schemeKey] || COLOR_SCHEMES.rainbow;
+
     el.movesValue.textContent = String(gameState.moves);
     el.bestValue.textContent = gameState.bestScore === null ? "-" : String(gameState.bestScore);
+    el.modeValue.textContent = `${difficulty.shortLabel} • ${scheme.label}`;
   }
 
   function renderColorButtons() {
+    const palette = getActivePalette();
     el.colorBar.innerHTML = "";
+
     for (let i = 0; i < gameState.colorCount; i += 1) {
       const button = document.createElement("button");
+      const color = palette[i];
+      const lightColor = isLightHex(color);
+
       button.type = "button";
       button.className = "color-btn";
-      button.style.backgroundColor = PALETTE[i];
-      if (PALETTE[i].toLowerCase() === "#ffffff") {
-        button.style.borderColor = "#0f172a";
-      }
+      button.style.backgroundColor = color;
+      button.style.borderColor = lightColor ? "#0f172a" : "rgba(255, 255, 255, 0.8)";
       button.setAttribute("aria-label", `Choose color ${i + 1}`);
       button.dataset.colorIndex = String(i);
+
       if (i === gameState.floodedColor) {
-        button.style.outline = "3px solid #f8fafc";
+        button.style.outline = `3px solid ${lightColor ? "#0f172a" : "#f8fafc"}`;
       }
       el.colorBar.appendChild(button);
     }
+  }
+
+  function renderSchemePreview() {
+    const selectedDifficulty = DIFFICULTIES[Number(el.setupDifficulty.value)] || DIFFICULTIES[1];
+    const schemeKey = el.setupScheme.value in COLOR_SCHEMES ? el.setupScheme.value : "rainbow";
+    const colors = pickEvenlySpacedColors(getSchemeColors(schemeKey), selectedDifficulty.colorCount);
+
+    el.schemePreview.innerHTML = "";
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < colors.length; i += 1) {
+      const chip = document.createElement("div");
+      chip.className = "scheme-preview__chip";
+      chip.style.backgroundColor = colors[i];
+      if (isLightHex(colors[i])) {
+        chip.style.borderColor = "#0f172a";
+      }
+      frag.appendChild(chip);
+    }
+    el.schemePreview.appendChild(frag);
   }
 
   function openWinModal() {
@@ -178,20 +284,31 @@
     el.winModal.classList.add("hidden");
   }
 
+  function openNewGameModal() {
+    el.newGameModal.classList.remove("hidden");
+    renderSchemePreview();
+  }
+
+  function closeNewGameModal() {
+    el.newGameModal.classList.add("hidden");
+  }
+
   function renderAll() {
     renderBoard();
     renderHUD();
     renderColorButtons();
   }
 
-  function newGame(size = gameState.size, colorCount = gameState.colorCount) {
+  function newGame(size = gameState.size, colorCount = gameState.colorCount, schemeKey = gameState.schemeKey) {
     gameState.size = size;
     gameState.colorCount = colorCount;
+    gameState.schemeKey = schemeKey;
     gameState.grid = createRandomGrid(size, colorCount);
     gameState.moves = 0;
     gameState.hasWon = false;
     gameState.floodedColor = gameState.grid[0][0];
-    gameState.bestScore = loadBestScore(size, colorCount);
+    gameState.bestScore = loadBestScore(size, colorCount, schemeKey);
+
     closeWinModal();
     renderAll();
   }
@@ -216,8 +333,8 @@
     renderAll();
   }
 
-  function setupDifficultySelect() {
-    el.difficultySelect.innerHTML = "";
+  function setupDifficultyOptions() {
+    el.setupDifficulty.innerHTML = "";
     DIFFICULTIES.forEach((d, idx) => {
       const opt = document.createElement("option");
       opt.value = String(idx);
@@ -225,15 +342,29 @@
       if (d.size === gameState.size && d.colorCount === gameState.colorCount) {
         opt.selected = true;
       }
-      el.difficultySelect.appendChild(opt);
+      el.setupDifficulty.appendChild(opt);
     });
   }
 
-  function selectDifficultyByState() {
-    const index = DIFFICULTIES.findIndex(
-      (d) => d.size === gameState.size && d.colorCount === gameState.colorCount
-    );
-    el.difficultySelect.value = String(index >= 0 ? index : 1);
+  function setupSchemeOptions() {
+    el.setupScheme.innerHTML = "";
+    Object.entries(COLOR_SCHEMES).forEach(([key, scheme]) => {
+      const opt = document.createElement("option");
+      opt.value = key;
+      opt.textContent = scheme.label;
+      if (key === gameState.schemeKey) {
+        opt.selected = true;
+      }
+      el.setupScheme.appendChild(opt);
+    });
+  }
+
+  function startGameFromSetup() {
+    const selectedDifficulty = DIFFICULTIES[Number(el.setupDifficulty.value)] || DIFFICULTIES[1];
+    const selectedScheme = el.setupScheme.value in COLOR_SCHEMES ? el.setupScheme.value : "rainbow";
+
+    newGame(selectedDifficulty.size, selectedDifficulty.colorCount, selectedScheme);
+    closeNewGameModal();
   }
 
   function bindEvents() {
@@ -247,14 +378,15 @@
     });
 
     el.newGameBtn.addEventListener("click", () => {
-      const selected = DIFFICULTIES[Number(el.difficultySelect.value)] || DIFFICULTIES[1];
-      newGame(selected.size, selected.colorCount);
-      selectDifficultyByState();
+      openNewGameModal();
+    });
+
+    el.startGameBtn.addEventListener("click", () => {
+      startGameFromSetup();
     });
 
     el.restartBtn.addEventListener("click", () => {
-      newGame(gameState.size, gameState.colorCount);
-      selectDifficultyByState();
+      newGame(gameState.size, gameState.colorCount, gameState.schemeKey);
     });
 
     el.winModal.addEventListener("click", (event) => {
@@ -263,20 +395,27 @@
       }
     });
 
-    el.difficultySelect.addEventListener("change", () => {
-      const selected = DIFFICULTIES[Number(el.difficultySelect.value)];
-      if (!selected) {
-        return;
+    el.newGameModal.addEventListener("click", (event) => {
+      if (event.target === el.newGameModal) {
+        closeNewGameModal();
       }
-      newGame(selected.size, selected.colorCount);
+    });
+
+    el.setupDifficulty.addEventListener("change", () => {
+      renderSchemePreview();
+    });
+
+    el.setupScheme.addEventListener("change", () => {
+      renderSchemePreview();
     });
 
     document.addEventListener(
       "touchmove",
       (event) => {
-        if (!event.target.closest("#difficultySelect")) {
-          event.preventDefault();
+        if (event.target.closest("select") || event.target.closest(".modal__content")) {
+          return;
         }
+        event.preventDefault();
       },
       { passive: false }
     );
@@ -347,10 +486,12 @@
   }
 
   function init() {
-    setupDifficultySelect();
-    newGame(12, 6);
-    selectDifficultyByState();
+    setupDifficultyOptions();
+    setupSchemeOptions();
+    newGame(12, 6, "rainbow");
+    renderSchemePreview();
     bindEvents();
+    openNewGameModal();
     registerServiceWorker();
     window.testFloodFill = testFloodFill;
   }

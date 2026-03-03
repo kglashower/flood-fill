@@ -17,8 +17,7 @@
         <div class="hud__item"><span class="hud__label">Moves</span> <span id="movesValue">0</span></div>
         <div class="hud__item"><span class="hud__label">Best</span> <span id="bestValue">-</span></div>
         <div class="hud__controls">
-          <label for="difficultySelect" class="sr-only">Difficulty</label>
-          <select id="difficultySelect" aria-label="Select difficulty"></select>
+          <span id="modeValue" class="mode-value">Classic • Rainbow</span>
           <button id="newGameBtn" class="btn btn--small" type="button">New Game</button>
         </div>
       </header>
@@ -35,6 +34,23 @@
         <h2 id="winTitle">You Win!</h2>
         <p id="winMessage">Completed in 0 moves.</p>
         <button id="restartBtn" class="btn" type="button">Play Again</button>
+      </div>
+    </div>
+
+    <div id="newGameModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="newGameTitle">
+      <div class="modal__content modal__content--setup">
+        <h2 id="newGameTitle">New Game</h2>
+        <p class="setup-copy">Choose your challenge and color style.</p>
+
+        <label for="setupDifficulty" class="setup-label">Difficulty</label>
+        <select id="setupDifficulty" class="setup-select" aria-label="Select difficulty"></select>
+
+        <label for="setupScheme" class="setup-label">Color Scheme</label>
+        <select id="setupScheme" class="setup-select" aria-label="Select color scheme"></select>
+
+        <div id="schemePreview" class="scheme-preview" aria-label="Color scheme preview"></div>
+
+        <button id="startGameBtn" class="btn" type="button">Start Game</button>
       </div>
     </div>
 
