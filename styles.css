@@ -156,6 +156,10 @@ body {
   display: none;
 }
 
+.hidden {
+  display: none !important;
+}
+
 .modal__content {
   width: min(92vw, 360px);
   background: #0f172a;
@@ -204,6 +208,22 @@ body {
   aspect-ratio: 1 / 1;
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.update-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(86px + var(--safe-bottom));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.95);
 }
 
 .sr-only {

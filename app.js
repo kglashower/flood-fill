@@ -1,4 +1,6 @@
 (() => {
+  const SW_VERSION = "2026-03-03-1";
+
   const COLOR_SCHEMES = {
     rainbow: {
       label: "Rainbow",
@@ -60,10 +62,15 @@
     setupScheme: document.getElementById("setupScheme"),
     startGameBtn: document.getElementById("startGameBtn"),
     schemePreview: document.getElementById("schemePreview"),
+    updateBanner: document.getElementById("updateBanner"),
+    updateNowBtn: document.getElementById("updateNowBtn"),
     winModal: document.getElementById("winModal"),
     winMessage: document.getElementById("winMessage"),
     restartBtn: document.getElementById("restartBtn"),
   };
+
+  let waitingServiceWorker = null;
+  let isRefreshingForUpdate = false;
 
   function randomInt(maxExclusive) {
     return Math.floor(Math.random() * maxExclusive);
@@ -409,6 +416,13 @@
       renderSchemePreview();
     });
 
+    el.updateNowBtn.addEventListener("click", () => {
+      if (!waitingServiceWorker) {
+        return;
+      }
+      waitingServiceWorker.postMessage({ type: "SKIP_WAITING" });
+    });
+
     document.addEventListener(
       "touchmove",
       (event) => {
@@ -478,10 +492,51 @@
     if (!("serviceWorker" in navigator)) {
       return;
     }
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./service-worker.js").catch((error) => {
-        console.error("Service worker registration failed:", error);
+
+    function showUpdateBanner(worker) {
+      waitingServiceWorker = worker;
+      el.updateBanner.classList.remove("hidden");
+    }
+
+    function handleRegistration(registration) {
+      if (registration.waiting) {
+        showUpdateBanner(registration.waiting);
+      }
+
+      registration.addEventListener("updatefound", () => {
+        const installingWorker = registration.installing;
+        if (!installingWorker) {
+          return;
+        }
+
+        installingWorker.addEventListener("statechange", () => {
+          if (installingWorker.state === "installed" && navigator.serviceWorker.controller) {
+            showUpdateBanner(installingWorker);
+          }
+        });
       });
+    }
+
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (isRefreshingForUpdate) {
+        return;
+      }
+      isRefreshingForUpdate = true;
+      window.location.reload();
+    });
+
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register(`./service-worker.js?v=${SW_VERSION}`)
+        .then((registration) => {
+          handleRegistration(registration);
+          setInterval(() => {
+            registration.update();
+          }, 60 * 1000);
+        })
+        .catch((error) => {
+          console.error("Service worker registration failed:", error);
+        });
     });
   }
 

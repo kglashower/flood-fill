@@ -1,4 +1,4 @@
-const CACHE_NAME = "flood-fill-v1";
+const CACHE_NAME = "flood-fill-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -13,7 +13,6 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
   );
-  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
@@ -54,4 +53,11 @@ self.addEventListener("fetch", (event) => {
       });
     })
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (!event.data || event.data.type !== "SKIP_WAITING") {
+    return;
+  }
+  self.skipWaiting();
 });
